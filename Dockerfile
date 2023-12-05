@@ -5,12 +5,12 @@ COPY go.* ./
 RUN go mod download
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /backend cmd/app/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /jayplus-backend cmd/app/main.go
 
 FROM alpine:latest
 
-COPY --from=builder /backend /backend
+COPY --from=builder /jayplus-backend /jayplus-backend
 
 RUN apk --no-cache add tzdata
 
-CMD ["/backend"]
+CMD ["/jayplus-backend"]
