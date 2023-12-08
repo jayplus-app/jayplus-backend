@@ -71,17 +71,9 @@ func ServiceTypes(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 
 // Timeslots handler returns a list of time slots.
 func TimeSlots(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
-	type RequestBody struct {
-		StartDate     string `json:"dateTime"`
-		ServiceTypeID string `json:"serviceTypeID"`
-		VehicleTypeID string `json:"vehicleTypeID"`
-	}
-
-	var requestBody RequestBody
-	if err := utils.ReadJSON(w, r, &requestBody); err != nil {
-		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		return
-	}
+	startDate := r.URL.Query().Get("date")
+	vehicleTypeID := r.URL.Query().Get("vehicleTypeID")
+	serviceTypeID := r.URL.Query().Get("serviceTypeID")
 
 	businessName := r.Header.Get("Business-Name")
 	business, err := db.GetBusinessByBusinessName(businessName)
@@ -91,28 +83,28 @@ func TimeSlots(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 		return
 	}
 
-	vehicleTypeID, err := strconv.Atoi(requestBody.VehicleTypeID)
+	vehicleTypeIDInt, err := strconv.Atoi(vehicleTypeID)
 	if err != nil {
 		// TODO: log error
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	serviceTypeID, err := strconv.Atoi(requestBody.ServiceTypeID)
+	serviceTypeIDInt, err := strconv.Atoi(serviceTypeID)
 	if err != nil {
 		// TODO: log error
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	d, err := time.Parse(time.DateOnly, requestBody.StartDate)
+	d, err := time.Parse(time.DateOnly, startDate)
 	if err != nil {
 		// TODO: log error
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	timeSlots, err := GetBookingTimeslots(db, business, serviceTypeID, vehicleTypeID, d)
+	timeSlots, err := GetBookingTimeslots(db, business, serviceTypeIDInt, vehicleTypeIDInt, d)
 	if err != nil {
 		// TODO: log error
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
