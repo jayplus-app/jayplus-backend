@@ -17,13 +17,13 @@ func BookingRoutes(r *mux.Router, auth auth.AuthInterface, db db.DBInterface) {
 
 	bookingRouter.HandleFunc("/vehicle-types", func(w http.ResponseWriter, r *http.Request) {
 		VehicleTypes(w, r, db)
-	}).Methods("GET", "OPTIONS")
+	}).Methods("GET")
 	bookingRouter.HandleFunc("/service-types", func(w http.ResponseWriter, r *http.Request) {
 		ServiceTypes(w, r, db)
 	}).Methods("GET")
 	bookingRouter.HandleFunc("/timeslots", func(w http.ResponseWriter, r *http.Request) {
 		TimeSlots(w, r, db)
-	}).Methods("GET")
+	}).Methods("GET", "OPTIONS")
 	bookingRouter.HandleFunc("/service-cost", func(w http.ResponseWriter, r *http.Request) {
 		ServiceCost(w, r, db)
 	}).Methods("POST")
