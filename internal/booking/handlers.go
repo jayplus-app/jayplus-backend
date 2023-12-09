@@ -2,7 +2,6 @@ package booking
 
 import (
 	"backend/contracts/auth"
-	"backend/contracts/booking"
 	"backend/contracts/db"
 	"backend/models"
 	"backend/utils"
@@ -110,13 +109,7 @@ func TimeSlots(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
-
-	timeSlotsResponse := booking.TimeSlots{
-		Date:  d.Format(time.DateOnly),
-		Slots: timeSlots,
-	}
-
-	utils.WriteJSON(w, http.StatusOK, timeSlotsResponse)
+	utils.WriteJSON(w, http.StatusOK, timeSlots)
 }
 
 // ServiceCost handler returns the cost of a service.
