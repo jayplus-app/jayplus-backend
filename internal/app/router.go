@@ -10,13 +10,12 @@ import (
 
 func (app *App) SetupRouter() *mux.Router {
 	r := mux.NewRouter()
-
+	r.Use(CorsControls)
+	
 	AppRoutes(r, app, app.DB)
 	auth.AuthRoutes(r, app.Auth, app.DB)
 	booking.BookingRoutes(r, app.Auth, app.DB)
 	payment.PaymentRoutes(r, app.DB)
-
-	r.Use(CorsControls)
 
 	return r
 }
