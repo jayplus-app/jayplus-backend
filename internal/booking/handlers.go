@@ -114,18 +114,8 @@ func TimeSlots(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 
 // ServiceCost handler returns the cost of a service.
 func ServiceCost(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
-	// post request body
-	type RequestBody struct {
-		ServiceTypeID string `json:"serviceTypeID"`
-		VehicleTypeID string `json:"vehicleTypeID"`
-	}
-
-	var requestBody RequestBody
-	err := utils.ReadJSON(w, r, &requestBody)
-	if err != nil {
-		utils.ErrorJSON(w, err, http.StatusBadRequest)
-		return
-	}
+	vehicleTypeID := r.URL.Query().Get("vehicleTypeID")
+	serviceTypeID := r.URL.Query().Get("serviceTypeID")
 
 	businessName := r.Header.Get("Business-Name")
 	business, err := db.GetBusinessByBusinessName(businessName)
@@ -134,19 +124,19 @@ func ServiceCost(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 		return
 	}
 
-	vehicleTypeID, err := strconv.Atoi(requestBody.VehicleTypeID)
+	vehicleTypeIDInt, err := strconv.Atoi(vehicleTypeID)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	serviceTypeID, err := strconv.Atoi(requestBody.ServiceTypeID)
+	serviceTypeIDInt, err := strconv.Atoi(serviceTypeID)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
-	serviceDetail, err := db.GetServiceDetail(business.ID, vehicleTypeID, serviceTypeID)
+	serviceDetail, err := db.GetServiceDetail(business.ID, vehicleTypeIDInt, serviceTypeIDInt)
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
