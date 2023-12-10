@@ -29,7 +29,7 @@ func BookingRoutes(r *mux.Router, auth auth.AuthInterface, db db.DBInterface) {
 	}).Methods("GET", "OPTIONS")
 	bookingRouter.HandleFunc("/create-booking", func(w http.ResponseWriter, r *http.Request) {
 		CreateBooking(w, r, db)
-	}).Methods("POST")
+	}).Methods("POST", "OPTIONS")
 
 	adminOnlyRouter := bookingRouter.PathPrefix("/").Subrouter()
 	adminOnlyRouter.Use(auth.AuthRequired(db))
