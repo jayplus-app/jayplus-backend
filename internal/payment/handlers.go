@@ -1,16 +1,22 @@
 package payment
 
 import (
+	"backend/config"
 	"backend/contracts/db"
 	"backend/utils"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/paymentintent"
+	"github.com/stripe/stripe-go/v76/webhook"
 )
 
 type BookingInvoice struct {
@@ -32,7 +38,7 @@ type CreatePaymentIntentResponse struct {
 }
 
 func CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
-	stripe.Key = "sk_test_51MKWmeLKOrXppaRnyQt8qStlXASK4M5V7JOBQ2y3uTrJQWWWumXn5XEA0NnPTNFEEygMlx7ShKU2qqmeVg0lR1Rb00Md93C9ad"
+	stripe.Key = config.StripeSecretKey
 
 	if r.Method != "POST" {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -48,6 +54,8 @@ func CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterfa
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
+
+	businessName := r.Header.Get("Business-Name")
 
 	booking, err := db.GetBookingByID(reqPayload.BookingNumber)
 	if err != nil {
@@ -72,6 +80,10 @@ func CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterfa
 	params := &stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(int64(serviceDetail.Price)),
 		Currency: stripe.String(string(stripe.CurrencyCAD)),
+		Metadata: map[string]string{
+			"bookingID":    strconv.Itoa(booking.ID),
+			"businessName": businessName,
+		},
 		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
 			Enabled: stripe.Bool(true),
 		},
@@ -133,7 +145,7 @@ type BookingReceiptResponse struct {
 func BookingReceipt(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 	vars := mux.Vars(r)
 
-	bookingID, err := strconv.Atoi(vars["booking-id"])
+	bookingID, err := strconv.Atoi(vars["bookingID"])
 	if err != nil {
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
@@ -172,6 +184,59 @@ func BookingReceipt(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, response)
+}
+
+func StripeWebhook(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
+	const MaxBodyBytes = int64(65536)
+	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading request body: %v\n", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	event := stripe.Event{}
+
+	if err := json.Unmarshal(payload, &event); err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  Webhook error while parsing basic request. %v\n", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	endpointSecret := config.StripeWebhookSecret
+	signatureHeader := r.Header.Get("Stripe-Signature")
+
+	event, err = webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  Webhook signature verification failed. %v\n", err)
+		w.WriteHeader(http.StatusBadRequest) // Return a 400 error on a bad signature
+		return
+	}
+
+	// Unmarshal the event data into an appropriate struct depending on its Type
+	switch event.Type {
+	case "payment_intent.succeeded":
+		var paymentIntent stripe.PaymentIntent
+		err := json.Unmarshal(event.Data.Raw, &paymentIntent)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing webhook JSON: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = PaymentIntentSucceeded(db, paymentIntent)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error handling webhook: %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+	default:
+		fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func PayBooking(w http.ResponseWriter, r *http.Request, db db.DBInterface) {

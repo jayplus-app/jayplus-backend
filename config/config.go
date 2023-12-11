@@ -4,4 +4,5 @@ func LoadConfig() {
 	LoadAppConfig()
 	LoadDBConfig()
 	LoadAuthConfig()
+	LoadPaymentConfig()
 }

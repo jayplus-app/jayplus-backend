@@ -10,4 +10,5 @@ type PaymentInterface interface {
 	GetInvoice(w http.ResponseWriter, r *http.Request, db db.DBInterface)
 	CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterface)
 	BookingReceipt(w http.ResponseWriter, r *http.Request, db db.DBInterface)
+	StripeWebhook(w http.ResponseWriter, r *http.Request, db db.DBInterface)
 }
