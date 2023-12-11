@@ -13,6 +13,9 @@ func PaymentRoutes(r *mux.Router, db db.DBInterface) {
 	paymentRouter.HandleFunc("/create-payment-intent", func(w http.ResponseWriter, r *http.Request) {
 		CreatePaymentIntent(w, r, db)
 	}).Methods("POST", "OPTIONS")
+	paymentRouter.HandleFunc("/booking-receipt/{booking-id}", func(w http.ResponseWriter, r *http.Request) {
+		BookingReceipt(w, r, db)
+	}).Methods("GET")
 
 	paymentRouter.HandleFunc("/pay-booking", func(w http.ResponseWriter, r *http.Request) {
 		PayBooking(w, r, db)

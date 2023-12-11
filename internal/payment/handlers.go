@@ -116,6 +116,64 @@ func CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterfa
 	utils.WriteJSON(w, http.StatusOK, response)
 }
 
+type BookingReceiptResponse struct {
+	BookingID   int       `json:"bookingID"`
+	BillNumber  int       `json:"billNumber"`
+	Status      string    `json:"status"`
+	VehicleType string    `json:"vehicleType"`
+	ServiceType string    `json:"serviceType"`
+	Datetime    time.Time `json:"datetime"`
+	ServiceCost int       `json:"serviceCost"`
+	Discount    int       `json:"discount"`
+	Total       int       `json:"total"`
+	Deposit     int       `json:"deposit"`
+	Remaining   int       `json:"remaining"`
+}
+
+func BookingReceipt(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
+	vars := mux.Vars(r)
+
+	bookingID, err := strconv.Atoi(vars["booking-id"])
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	booking, err := db.GetBookingByID(bookingID)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	vehicleType, err := db.GetVehicleTypeByID(booking.VehicleTypeID)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	serviceType, err := db.GetServiceTypeByID(booking.ServiceTypeID)
+	if err != nil {
+		utils.ErrorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	response := BookingReceiptResponse{
+		BookingID:   booking.ID,
+		BillNumber:  booking.BillNumber,
+		Status:      booking.Status,
+		VehicleType: vehicleType.Name,
+		ServiceType: serviceType.Name,
+		Datetime:    booking.Datetime,
+		ServiceCost: booking.Cost,
+		Discount:    booking.Discount,
+		Total:       booking.Cost - booking.Discount,
+		Deposit:     booking.Deposit,
+		Remaining:   booking.Cost - booking.Discount - booking.Deposit,
+	}
+
+	utils.WriteJSON(w, http.StatusOK, response)
+}
+
 func PayBooking(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 	payment := map[string]string{
 		"booking_id": "1",
