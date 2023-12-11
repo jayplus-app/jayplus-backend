@@ -10,6 +10,10 @@ import (
 func PaymentRoutes(r *mux.Router, db db.DBInterface) {
 	paymentRouter := r.PathPrefix("/payment").Subrouter()
 
+	paymentRouter.HandleFunc("/create-payment-intent", func(w http.ResponseWriter, r *http.Request) {
+		CreatePaymentIntent(w, r, db)
+	}).Methods("POST", "OPTIONS")
+
 	paymentRouter.HandleFunc("/pay-booking", func(w http.ResponseWriter, r *http.Request) {
 		PayBooking(w, r, db)
 	}).Methods("GET")

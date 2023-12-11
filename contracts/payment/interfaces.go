@@ -8,4 +8,5 @@ import (
 type PaymentInterface interface {
 	PayBooking(w http.ResponseWriter, r *http.Request, db db.DBInterface)
 	GetInvoice(w http.ResponseWriter, r *http.Request, db db.DBInterface)
+	CreatePaymentIntent(w http.ResponseWriter, r *http.Request, db db.DBInterface)
 }
