@@ -15,7 +15,6 @@ var (
 	RefreshTokenExpiry time.Duration
 	JWTCookieDomain    string
 	JWTCookiePath      string
-	JWTCookieName      string
 )
 
 func LoadAuthConfig() {
@@ -37,5 +36,4 @@ func LoadAuthConfig() {
 
 	JWTCookieDomain = os.Getenv("JWT_COOKIE_DOMAIN")
 	JWTCookiePath = os.Getenv("JWT_COOKIE_PATH")
-	JWTCookieName = os.Getenv("JWT_COOKIE_NAME")
 }

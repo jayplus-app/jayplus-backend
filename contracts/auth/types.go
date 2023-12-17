@@ -14,7 +14,6 @@ type Auth struct {
 	RefreshTokenExpiry time.Duration `json:"refresh_token_expiry"`
 	CookieDomain       string        `json:"cookie_domain"`
 	CookiePath         string        `json:"cookie_path"`
-	CookieName         string        `json:"cookie_name"`
 }
 
 type AuthUser struct {

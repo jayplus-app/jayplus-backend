@@ -29,7 +29,6 @@ func NewAuth() *Auth {
 			RefreshTokenExpiry: config.RefreshTokenExpiry,
 			CookieDomain:       config.JWTCookieDomain,
 			CookiePath:         config.JWTCookiePath,
-			CookieName:         config.JWTCookieName,
 		},
 	}
 }
@@ -76,9 +75,23 @@ func (a *Auth) generateSignedTokenPair(user *auth.AuthUser) (auth.JWTTokenPair, 
 	}, nil
 }
 
+func (a *Auth) getAccessCookie(accessToken string, host string) *http.Cookie {
+	return &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     a.CookiePath,
+		Expires:  time.Now().UTC().Add(a.AccessTokenExpiry),
+		MaxAge:   int(a.AccessTokenExpiry.Seconds()),
+		SameSite: http.SameSiteStrictMode,
+		Domain:   host,
+		HttpOnly: true,
+		Secure:   false,
+	}
+}
+
 func (a *Auth) getRefreshCookie(refreshToken string, host string) *http.Cookie {
 	return &http.Cookie{
-		Name:     a.CookieName,
+		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     a.CookiePath,
 		Expires:  time.Now().UTC().Add(a.RefreshTokenExpiry),
@@ -92,7 +105,7 @@ func (a *Auth) getRefreshCookie(refreshToken string, host string) *http.Cookie {
 
 func (a *Auth) getExpiredRefreshCookie(domain string) *http.Cookie {
 	return &http.Cookie{
-		Name:     a.CookieName,
+		Name:     "refresh_token",
 		Value:    "",
 		Path:     a.CookiePath,
 		Expires:  time.Unix(0, 0),

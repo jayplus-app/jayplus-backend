@@ -64,18 +64,36 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request, db db.DBInterface) 
 		log.Fatalf("Error generating token pair: %v", err)
 	}
 
-	host := r.Host
+	accessTokenExpiryInt := int(a.AccessTokenExpiry.Seconds())
+	refreshTokenExpiryInt := int(a.RefreshTokenExpiry.Seconds())
 
-	// set refresh cookie
-	refreshCookie := a.getRefreshCookie(tokenPair.RefreshToken, host)
-	http.SetCookie(w, refreshCookie)
+	type Token struct {
+		Token         string `json:"token"`
+		ExpirySeconds int    `json:"expiry_seconds"`
+	}
 
-	utils.WriteJSON(w, http.StatusAccepted, tokenPair)
+	type LoginResponse struct {
+		AccessToken  Token `json:"access_token"`
+		RefreshToken Token `json:"refresh_token"`
+	}
+
+	loginResponse := LoginResponse{
+		AccessToken: Token{
+			Token:         tokenPair.AccessToken,
+			ExpirySeconds: accessTokenExpiryInt,
+		},
+		RefreshToken: Token{
+			Token:         tokenPair.RefreshToken,
+			ExpirySeconds: refreshTokenExpiryInt,
+		},
+	}
+
+	utils.WriteJSON(w, http.StatusAccepted, loginResponse)
 }
 
 func (a *Auth) RefreshToken(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 	for _, cookie := range r.Cookies() {
-		if cookie.Name == a.CookieName {
+		if cookie.Name == "refresh_token" {
 			claims := &auth.JWTClaims{}
 			refreshToken := cookie.Value
 
@@ -128,9 +146,20 @@ func (a *Auth) RefreshToken(w http.ResponseWriter, r *http.Request, db db.DBInte
 
 			host := r.Host
 
+			http.SetCookie(w, a.getAccessCookie(tokenPair.AccessToken, host))
 			http.SetCookie(w, a.getRefreshCookie(tokenPair.RefreshToken, host))
 
-			utils.WriteJSON(w, http.StatusOK, tokenPair)
+			type RefreshResponse struct {
+				Error   bool   `json:"error"`
+				Message string `json:"message"`
+			}
+
+			refreshResponse := RefreshResponse{
+				Error:   false,
+				Message: "Token refreshed",
+			}
+
+			utils.WriteJSON(w, http.StatusAccepted, refreshResponse)
 		}
 	}
 }
