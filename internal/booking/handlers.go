@@ -36,12 +36,14 @@ func VehicleTypes(w http.ResponseWriter, r *http.Request, db db.DBInterface) {
 
 	business, err := db.GetBusinessByBusinessName(businessName)
 	if err != nil {
+		log.Println(err)
 		utils.ErrorJSON(w, errors.New("invalid business"), http.StatusBadRequest)
 		return
 	}
 
 	vehicleTypes, err := db.GetVehicleTypes(business.ID)
 	if err != nil {
+		log.Println(err)
 		utils.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
